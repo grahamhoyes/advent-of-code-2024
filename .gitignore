@@ -18,3 +18,5 @@ Cargo.lock
 
 example.txt
 input.txt
+inputs/
+.env
