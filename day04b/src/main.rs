@@ -1,13 +1,7 @@
-const DIRECTIONS: [(isize, isize); 8] = [
-    (0, 1),
-    (0, -1),
-    (1, -1),
-    (1, 0),
-    (1, 1),
-    (-1, -1),
-    (-1, 0),
-    (-1, 1),
-];
+use std::collections::HashMap;
+
+// Consider only the diagonal directions this time
+const DIRECTIONS: [(isize, isize); 4] = [(1, -1), (1, 1), (-1, -1), (-1, 1)];
 
 struct Board {
     width: usize,
@@ -51,25 +45,33 @@ impl Board {
     }
 }
 
+/// Strategy:
+///  - Find all the MAS instances that occur on diagonals
+///  - For each one, store the position of its center A
+///  - Count the number of times an A is shared
 fn solution(input: &str) -> usize {
-    const WORD: &str = "XMAS";
+    const WORD: &str = "MAS";
 
     let board = Board::from_str(input);
 
-    let mut count: usize = 0;
+    let mut center_positions: HashMap<(isize, isize), usize> = HashMap::new();
 
     for row in 0..board.height {
         for col in 0..board.width {
+            // DIRECTIONS is now only the diagonals
             for dir in DIRECTIONS.iter() {
-                // In each direction, search for XMAS.
                 if board.check_word(&(row, col), dir, WORD) {
-                    count += 1
+                    let center = (row as isize + dir.0, col as isize + dir.1);
+                    *center_positions.entry(center).or_insert(0) += 1;
                 }
             }
         }
     }
 
-    count
+    center_positions
+        .into_iter()
+        .filter(|(_pos, count)| *count == 2)
+        .count()
 }
 
 fn main() {
@@ -88,7 +90,7 @@ mod tests {
         let input = include_str!("../example.txt");
         let res = solution(input);
 
-        assert_eq!(res, 0);
+        assert_eq!(res, 9);
     }
 
     #[test]
@@ -96,6 +98,6 @@ mod tests {
         let input = include_str!("../input.txt");
         let res = solution(input);
 
-        assert_eq!(res, 0);
+        assert_eq!(res, 1910);
     }
 }
