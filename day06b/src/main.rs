@@ -13,7 +13,11 @@ enum Outcome {
 }
 
 /// Walk around the board until either leaving or encountering a loop
-fn walk_around(board: &Board<Cell>, start: Coord, start_dir: Dir) -> Outcome {
+fn walk_around(
+    board: &Board<Cell>,
+    start: Coord,
+    start_dir: Dir,
+) -> (Outcome, HashSet<(Coord, Dir)>) {
     let mut dir: Dir = start_dir;
     let mut position: Coord = start;
 
@@ -21,7 +25,7 @@ fn walk_around(board: &Board<Cell>, start: Coord, start_dir: Dir) -> Outcome {
 
     while board.get(&position).is_some() {
         if visited.contains(&(position, dir)) {
-            return Outcome::Loop;
+            return (Outcome::Loop, visited);
         }
 
         visited.insert((position, dir));
@@ -37,7 +41,7 @@ fn walk_around(board: &Board<Cell>, start: Coord, start_dir: Dir) -> Outcome {
         position = position + dir;
     }
 
-    Outcome::Left
+    (Outcome::Left, visited)
 }
 
 fn solution(input: &str) -> usize {
@@ -65,26 +69,28 @@ fn solution(input: &str) -> usize {
     let mut board: Board<Cell> = Board::new(board);
     let mut num_loops = 0;
 
-    let (rows, cols) = board.size();
+    // Optimization: Instead of trying every position, we only need to try introducing
+    // an obstacle on the original path.
+    let (_, visited_with_direction) = walk_around(&board, starting_position, Dir::North);
+    let visited: HashSet<Coord> = visited_with_direction
+        .into_iter()
+        .map(|(coord, _dir)| coord)
+        .collect();
 
-    for i in 0..rows {
-        for j in 0..cols {
-            let pos = Coord(i as i32, j as i32);
-            if pos == starting_position {
-                continue;
+    for pos in visited.iter() {
+        if *pos == starting_position {
+            continue;
+        }
+
+        if matches!(board.get(&pos).unwrap(), Cell::Empty) {
+            board.set(&pos, Cell::Occupied);
+
+            let (outcome, _) = walk_around(&board, starting_position, Dir::North);
+            if matches!(outcome, Outcome::Loop) {
+                num_loops += 1;
             }
 
-            // For each empty cell, add an obstruction and see if it causes a loop
-            if matches!(board.get(&pos).unwrap(), Cell::Empty) {
-                board.set(&pos, Cell::Occupied);
-
-                let outcome = walk_around(&board, starting_position, Dir::North);
-                if matches!(outcome, Outcome::Loop) {
-                    num_loops += 1;
-                }
-
-                board.set(&pos, Cell::Empty);
-            }
+            board.set(&pos, Cell::Empty);
         }
     }
 
