@@ -6,7 +6,9 @@ fn valid_calibration(target: u64, measurements: &[u64], accum: u64) -> bool {
     let value = measurements[0];
     let rest = &measurements[1..];
 
-    valid_calibration(target, rest, accum + value) || valid_calibration(target, rest, accum * value)
+    valid_calibration(target, rest, accum + value)
+        || valid_calibration(target, rest, accum * value)
+        || valid_calibration(target, rest, format!("{accum}{value}").parse().unwrap())
 }
 
 fn solution(input: &str) -> u64 {
@@ -43,7 +45,7 @@ mod tests {
         let input = include_str!("../example.txt");
         let res = solution(input);
 
-        assert_eq!(res, 3749);
+        assert_eq!(res, 11387);
     }
 
     #[test]
@@ -52,6 +54,6 @@ mod tests {
         let input = include_str!("../input.txt");
         let res = solution(input);
 
-        assert_eq!(res, 2664460013123);
+        assert_eq!(res, 426214131924213);
     }
 }
