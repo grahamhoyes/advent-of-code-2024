@@ -1,9 +1,26 @@
+use num::Integer;
 use std::ops::{Add, Sub};
 
 /// A (row, col) coordinate pair or vector. Using i32 so that we can subtract
 /// or have negative vectors.
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub struct Coord(pub i32, pub i32);
+
+impl Coord {
+    /// Simplify the coordinate vector by dividing both components by their
+    /// greatest common divisor.
+    ///
+    /// # Examples
+    /// ```
+    /// let c = Coord(4, 6);
+    /// assert!(c.simplify() == Coord(2, 3));
+    /// ```
+    pub fn simplify(&self) -> Coord {
+        let gcd = self.0.gcd(&self.1);
+
+        Coord(self.0 / gcd, self.1 / gcd)
+    }
+}
 
 impl From<Coord> for (i32, i32) {
     fn from(value: Coord) -> Self {

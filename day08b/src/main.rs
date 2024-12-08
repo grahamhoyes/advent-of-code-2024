@@ -32,18 +32,21 @@ fn solution(input: &str) -> usize {
 
     for (_letter, positions) in antenna_positions.iter() {
         for (a, b) in positions.iter().tuple_combinations() {
-            let diff = b - a;
-            let potential_antinodes = [
-                b + &diff, // Extrapolate forward
-                a - &diff, // Extrapolate backward
-            ];
+            let diff = (b - a).simplify();
 
-            potential_antinodes
-                .into_iter()
-                .filter(|coord| board.get(coord).is_some())
-                .for_each(|coord| {
-                    antinode_positions.insert(coord);
-                });
+            // Walk backwards from a (including a itself) to find antinodes in that direction
+            let mut coord: Coord = *a;
+            while board.get(&coord).is_some() {
+                antinode_positions.insert(coord);
+                coord = coord - diff;
+            }
+
+            // Now walk forwards to find antinodes in the other direction
+            coord = *a + diff;
+            while board.get(&coord).is_some() {
+                antinode_positions.insert(coord);
+                coord = coord + diff;
+            }
         }
     }
 
@@ -66,7 +69,7 @@ mod tests {
         let input = include_str!("../example.txt");
         let res = solution(input);
 
-        assert_eq!(res, 14);
+        assert_eq!(res, 34);
     }
 
     #[test]
@@ -74,6 +77,6 @@ mod tests {
         let input = include_str!("../input.txt");
         let res = solution(input);
 
-        assert_eq!(res, 332);
+        assert_eq!(res, 1174);
     }
 }
