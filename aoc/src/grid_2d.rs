@@ -131,6 +131,52 @@ where
         Self { matrix }
     }
 
+    /// Creates a new board by transforming a string input, mapping each character to a board
+    /// element using the provided transformation function.
+    ///
+    /// # Arguments
+    /// * `input` - A string representing the board, with rows separated by newlines
+    /// * `transform` - A function that converts each character to the board's element type
+    ///
+    /// # Examples
+    /// ```
+    /// use grid_2d::Board;
+    ///
+    /// #[derive(Debug, Clone, Hash)]
+    /// enum Cell {
+    ///     Empty,
+    ///     Rock,
+    ///     Sand,
+    /// }
+    ///
+    /// let input =
+    ///     "SR.\n\
+    ///      .R.\n\
+    ///      ..R";
+    ///
+    /// let board = Board::transform_from_str(input, |c| match c {
+    ///     'S' => Cell::Sand,
+    ///     'R' => Cell::Rock,
+    ///     '.' => Cell::Empty,
+    ///     _ => panic!("unexpected character"),
+    /// });
+    ///
+    /// assert_eq!(board.get(&Coord(0, 0)), Some(Cell::Start));
+    /// assert_eq!(board.get(&Coord(0, 1)), Some(Cell::Rock));
+    /// assert_eq!(board.get(&Coord(2, 2)), Some(Cell::Rock));
+    /// ```
+    pub fn transform_from_str<F>(input: &str, transform: F) -> Self
+    where
+        F: Fn(char) -> T,
+    {
+        let matrix: Vec<Vec<T>> = input
+            .lines()
+            .map(|line| line.chars().map(|c| transform(c)).collect())
+            .collect();
+
+        Self::new(matrix)
+    }
+
     pub fn size(&self) -> (usize, usize) {
         (self.matrix.len(), self.matrix[0].len())
     }
