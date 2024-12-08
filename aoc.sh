@@ -31,18 +31,18 @@ function get_session_token() {
 
 # Fetch input, storing it in the inputs/ directory (.gitignore'd)
 function fetch_input() {
-    day_no_padding="$1"
-    day=$(printf "%02d" "$day_no_padding")
-    input_dir="${ROOT_DIR}/inputs"
+    local day_no_padding="$1"
+    local day=$(printf "%02d" "$day_no_padding")
+    local input_dir="${ROOT_DIR}/inputs"
     mkdir -p "$input_dir"
-    input_file="${input_dir}/day${day}.txt"
+    local input_file="${input_dir}/day${day}.txt"
 
     # Only download if we don't already have it
     if [ ! -f "$input_file" ]; then
         get_session_token  # Ensure we have a session token
 
         # Fetch the input using curl
-        http_status=$(curl -s -w "%{http_code}" -o "$input_file" \
+        local http_status=$(curl -s -w "%{http_code}" -o "$input_file" \
             -H "Cookie: session=${AOC_SESSION}" \
             "https://adventofcode.com/2024/day/${day_no_padding}/input")
 
@@ -58,10 +58,10 @@ function fetch_input() {
 }
 
 function make_day_part() {
-  day=$(printf "%02d" "$1")
-  part=$2
+  local day=$(printf "%02d" "$1")
+  local part=$2
 
-  name="day${day}${part}"
+  local name="day${day}${part}"
 
   if [ "$(pwd)" != "${ROOT_DIR}" ]; then
     cd "${ROOT_DIR}" || exit 1
@@ -71,7 +71,7 @@ function make_day_part() {
   cargo new "$name"
   touch "$name/example.txt"
 
-  input_file="${ROOT_DIR}/inputs/day${day}.txt"
+  local input_file="${ROOT_DIR}/inputs/day${day}.txt"
   if [ -f "${input_file}" ]; then
     cp "${ROOT_DIR}/inputs/day${day}.txt" "$name/input.txt"
   else
@@ -82,7 +82,9 @@ function make_day_part() {
 }
 
 function make_day() {
-  day="$1"
+  local day="$1"
+  local day_padded=$(printf "%02d" "$1")
+
 
   fetch_input "$day"
   if [ $? -ne 0 ]; then
@@ -94,8 +96,8 @@ function make_day() {
 }
 
 function download_inputs() {
-  day="$1"
-  day_padded=$(printf "%02d" "$day")
+  local day="$1"
+  local day_padded=$(printf "%02d" "$day")
 
   if [ ! -d "${ROOT_DIR}/day${day_padded}a" ] || [ ! -d "${ROOT_DIR}/day${day_padded}b" ]; then
     echo "Error: Day ${day} directories not found. Create them first with '$0 new ${day}'"
