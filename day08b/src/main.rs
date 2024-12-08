@@ -3,34 +3,12 @@ use itertools::Itertools;
 use std::collections::{HashMap, HashSet};
 
 fn solution(input: &str) -> usize {
-    let mut antenna_positions: HashMap<char, Vec<Coord>> = HashMap::new();
-
-    let matrix: Vec<Vec<char>> = input
-        .lines()
-        .enumerate()
-        .map(|(row, line)| {
-            line.chars()
-                .enumerate()
-                .map(|(col, c)| {
-                    if c != '.' {
-                        antenna_positions
-                            .entry(c)
-                            .or_default()
-                            .push(Coord(row as i32, col as i32));
-                    }
-
-                    c
-                })
-                .collect()
-        })
-        .collect();
-
-    // Won't actually be using this for much but easy bounds checking
-    let board = Board::new(matrix);
+    let board = Board::from_str(input);
+    let antenna_positions: HashMap<char, Vec<Coord>> = board.element_positions(|c| *c != '.');
 
     let mut antinode_positions: HashSet<Coord> = HashSet::new();
 
-    for (_letter, positions) in antenna_positions.iter() {
+    for positions in antenna_positions.values() {
         for (a, b) in positions.iter().tuple_combinations() {
             let diff = (b - a).simplify();
 

@@ -1,4 +1,6 @@
 use num::Integer;
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::ops::{Add, Sub};
 
 /// A (row, col) coordinate pair or vector. Using i32 so that we can subtract
@@ -31,6 +33,12 @@ impl From<Coord> for (i32, i32) {
 impl From<(i32, i32)> for Coord {
     fn from(value: (i32, i32)) -> Self {
         Coord(value.0, value.1)
+    }
+}
+
+impl From<(usize, usize)> for Coord {
+    fn from(value: (usize, usize)) -> Self {
+        Coord(value.0 as i32, value.1 as i32)
     }
 }
 
@@ -139,5 +147,79 @@ where
 
     pub fn set(&mut self, c: &Coord, val: T) {
         self.matrix[c.0 as usize][c.1 as usize] = val;
+    }
+
+    /// Returns a HashMap containing positions of elements that match the given filter.
+    /// Elements are grouped by type, with their positions collected into a Vec<Coord>.
+    ///
+    /// The elements to include are determined by the provided closure `filter`.
+    ///
+    /// # Examples
+    /// ```
+    /// use grid_2d::{Board, Coord};
+    ///
+    /// // Using with a char board - collecting all non-empty spaces
+    /// let board = Board::from_str(
+    ///     "A....\n\
+    ///      ..X..\n\
+    ///      X..X.\n\
+    ///      ....."
+    /// );
+    ///
+    /// let positions = board.element_positions(|c| *c != '.');
+    /// assert_eq!(positions.get(&'A').unwrap(), &vec![Coord(0, 0)]);
+    /// assert_eq!(positions.get(&'X').unwrap().len(), 3);
+    ///
+    /// // Or collecting just 'X' characters
+    /// let x_positions = board.element_positions(|c| *c == 'X');
+    /// assert_eq!(x_positions.get(&'X').unwrap().len(), 3);
+    ///
+    /// // Using with an enum
+    /// #[derive(Debug, Clone, Hash, Eq, PartialEq)]
+    /// enum Cell {
+    ///     Empty,
+    ///     Rock,
+    ///     Sand,
+    /// }
+    ///
+    /// let board = Board::new(vec![
+    ///     vec![Cell::Rock, Cell::Empty, Cell::Sand],
+    ///     vec![Cell::Empty, Cell::Rock, Cell::Empty],
+    /// ]);
+    ///
+    /// // Collecting all non-empty cells
+    /// let positions = board.element_positions(|cell| !matches!(cell, Cell::Empty));
+    /// assert_eq!(positions.get(&Cell::Rock).unwrap().len(), 2);
+    /// assert_eq!(positions.get(&Cell::Sand).unwrap().len(), 1);
+    /// ```
+    pub fn element_positions<P>(&self, filter: P) -> HashMap<T, Vec<Coord>>
+    where
+        P: Fn(&T) -> bool,
+        T: Clone + Hash + Eq,
+    {
+        let mut result = HashMap::new();
+
+        for (i, row) in self.matrix.iter().enumerate() {
+            for (j, item) in row.iter().enumerate() {
+                if !filter(item) {
+                    continue;
+                }
+
+                result
+                    .entry(item.clone())
+                    .or_insert_with(Vec::new)
+                    .push((i, j).into());
+            }
+        }
+
+        result
+    }
+}
+
+impl Board<char> {
+    pub fn from_str(input: &str) -> Self {
+        let matrix: Vec<Vec<char>> = input.lines().map(|line| line.chars().collect()).collect();
+
+        Self::new(matrix)
     }
 }
