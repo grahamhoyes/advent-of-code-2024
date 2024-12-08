@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 /// A (row, col) coordinate pair or vector. Using i32 so that we can subtract
 /// or have negative vectors.
@@ -66,24 +66,48 @@ impl Add<Coord> for Coord {
     }
 }
 
+impl Add<&Coord> for &Coord {
+    type Output = Coord;
+
+    fn add(self, rhs: &Coord) -> Self::Output {
+        Coord(self.0 + rhs.0, self.1 + rhs.1)
+    }
+}
+
+impl Sub<Coord> for Coord {
+    type Output = Coord;
+
+    fn sub(self, rhs: Coord) -> Self::Output {
+        Coord(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
+impl Sub<&Coord> for &Coord {
+    type Output = Coord;
+
+    fn sub(self, rhs: &Coord) -> Self::Output {
+        Coord(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
 #[derive(Debug)]
 pub struct Board<T>
 where
     T: Clone,
 {
-    pub inner: Vec<Vec<T>>,
+    pub matrix: Vec<Vec<T>>,
 }
 
 impl<T> Board<T>
 where
     T: Clone,
 {
-    pub fn new(board: Vec<Vec<T>>) -> Self {
-        Self { inner: board }
+    pub fn new(matrix: Vec<Vec<T>>) -> Self {
+        Self { matrix }
     }
 
     pub fn size(&self) -> (usize, usize) {
-        (self.inner.len(), self.inner[0].len())
+        (self.matrix.len(), self.matrix[0].len())
     }
 
     pub fn get(&self, c: &Coord) -> Option<T> {
@@ -93,10 +117,10 @@ where
             return None;
         }
 
-        Some(self.inner[c.0 as usize][c.1 as usize].clone())
+        Some(self.matrix[c.0 as usize][c.1 as usize].clone())
     }
 
     pub fn set(&mut self, c: &Coord, val: T) {
-        self.inner[c.0 as usize][c.1 as usize] = val;
+        self.matrix[c.0 as usize][c.1 as usize] = val;
     }
 }
