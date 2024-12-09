@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use std::rc::Rc;
 
 #[derive(Debug, Clone)]
 enum Block {
@@ -16,6 +17,72 @@ impl Display for Block {
                 write!(f, "{}", id.to_string().repeat(*size as usize))
             }
         }
+    }
+}
+
+struct BlockNode {
+    block: Block,
+    next: Option<Rc<BlockNode>>,
+}
+
+impl BlockNode {
+    /// Split a given node at the given size
+    ///
+    /// Returns a new node with size `size`, which points to the new free
+    /// node. Returns None if the split is invalid.
+    fn split(&mut self, size: u8) -> Option<()> {
+        match &mut self.block {
+            Block::File { .. } => None,
+            Block::Free { size: free_size } if *free_size <= size => None,
+            Block::Free { size: free_size } => {
+                let remaining_size = *free_size - size;
+                *free_size = size;
+
+                let new_block = Block::Free {
+                    size: remaining_size,
+                };
+                let new_next = self.next.take();
+                let new_node = BlockNode {
+                    block: new_block,
+                    next: new_next,
+                };
+                self.next = Some(Rc::new(new_node));
+                Some(())
+            }
+        }
+    }
+}
+
+struct BlockList {
+    head: Option<Rc<BlockNode>>,
+    size: usize,
+}
+
+impl BlockList {
+    fn from_vec(blocks: Vec<Block>) -> Self {
+        let mut blocks_iter = blocks.into_iter();
+        let mut size = 0;
+
+        let head = blocks_iter.next().map(|first_block| {
+            size += 1;
+            let mut current = Rc::new(BlockNode {
+                block: first_block,
+                next: None,
+            });
+
+            let head = Rc::clone(&current);
+
+            for block in blocks_iter {
+                size += 1;
+                let new_node = Rc::new(BlockNode { block, next: None });
+                *current.next = Some(new_node);
+                current = current.next.unwrap();
+            }
+
+            head
+        });
+
+        BlockList { head, size }
     }
 }
 
@@ -46,72 +113,50 @@ fn solution(input: &str) -> usize {
         .flatten()
         .collect();
 
-    let mut defragged_blocks: Vec<Block> = Vec::new();
-    let mut write_pos = 0usize;
+    // Nuts to efficiency, we're doing this in-place by inserting into
+    // the blocks vector with `.slice()`. This is horribly inefficient,
+    // but easier than coming up with a linked list-like data structure
+    // that actually compiles.
+
     let mut read_pos = blocks.len() - 1;
 
-    // A bit of a janky defrag loop. Fully defragmented blocks are written to
-    // `defragged_blocks`, rather than being written in-place: This is to avoid
-    // having to split a block which is annoying to do in Rust. The remaining
-    // size of free and file blocks is updated in the original `blocks` vector.
-    while write_pos < read_pos {
-        match blocks[write_pos] {
-            // Skip over files that are already in place
-            Block::File { .. } => {
-                defragged_blocks.push(blocks[write_pos].clone());
-                write_pos += 1;
+    while read_pos > 0 {
+        match blocks[read_pos] {
+            Block::Free { .. } => {
+                read_pos -= 1;
             }
-            // Skip free blocks that have been filled up in a previous iteration
-            Block::Free { size: 0 } => {
-                // This is actually impossible with the way we increment write_pos
-                write_pos += 1;
-            }
-            // If we find free space, try to fill it from a file at the end
-            Block::Free { size: free_size } => {
-                // Read backwards from read_block_idx to find the next non-empty file block,
-                while read_pos > write_pos {
-                    match blocks[read_pos] {
-                        Block::File { size, .. } if size > 0 => break,
-                        _ => read_pos -= 1,
-                    }
-                }
+            Block::File { id, size } => {
+                // Search from the very beginning to see if there's a free block
+                // big enough to hold this
+                for write_pos in 0..blocks.len() {
+                    match blocks[write_pos] {
+                        Block::File { .. } => continue,
+                        Block::Free { size: free_size } => {
+                            if free_size == size {
+                                blocks[write_pos] = Block::File { size, id };
+                                break;
+                            } else if free_size < size {
+                                continue;
+                            } else {
+                                let moved_block = Block::File { id, size };
+                                let free_block = Block::Free {
+                                    size: free_size - size,
+                                };
 
-                // At this point we know we've found a file block to move
-                if let Block::File { id, size } = blocks[read_pos] {
-                    if free_size >= size {
-                        defragged_blocks.push(Block::File { id, size });
-                        // Update remaining size on the write block
-                        blocks[write_pos] = Block::Free {
-                            size: free_size - size,
-                        };
-                        blocks[read_pos] = Block::Free { size };
-                        read_pos -= 1;
-                    } else {
-                        defragged_blocks.push(Block::File {
-                            id,
-                            size: free_size,
-                        });
-                        blocks[write_pos] = Block::Free { size: 0 };
-                        blocks[read_pos] = Block::File {
-                            id,
-                            size: size - free_size,
-                        };
-                        write_pos += 1;
+                                // Need to split the block. Here's the super inefficient part!
+                                blocks.splice(write_pos..write_pos, [moved_block, free_block]);
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
-    // Write the remaining block if there is one
-    if let Block::File { id, size } = blocks[read_pos] {
-        defragged_blocks.push(Block::File { id, size });
-    }
-
     let mut checksum = 0usize;
     let mut block_idx = 0usize;
 
-    for block in defragged_blocks {
+    for block in blocks {
         match block {
             Block::File { id, size } => {
                 for i in 0..size as usize {
@@ -129,7 +174,7 @@ fn solution(input: &str) -> usize {
 }
 
 fn main() {
-    let input = include_str!("../input.txt");
+    let input = include_str!("../example.txt");
     let res = solution(input);
 
     println!("Result: {}", res);
@@ -144,7 +189,7 @@ mod tests {
         let input = include_str!("../example.txt");
         let res = solution(input);
 
-        assert_eq!(res, 1928);
+        assert_eq!(res, 2858);
     }
 
     #[test]
