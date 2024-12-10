@@ -1,5 +1,4 @@
-use aoc::grid_2d::{Board, Coord, Dir};
-use std::collections::HashSet;
+use aoc::grid_2d::{Board, Dir};
 
 fn solution(input: &str) -> usize {
     let board = Board::transform_from_str(input, |c| c.to_digit(10).unwrap());
@@ -9,7 +8,7 @@ fn solution(input: &str) -> usize {
     trailheads
         .into_iter()
         .map(|start| {
-            let mut destinations: HashSet<Coord> = HashSet::new();
+            let mut destinations = 0;
             let mut queue = vec![start];
 
             while let Some(current) = queue.pop() {
@@ -20,7 +19,7 @@ fn solution(input: &str) -> usize {
 
                 if current_height == 9 {
                     // End of the trail
-                    destinations.insert(current);
+                    destinations += 1;
                     continue;
                 }
 
@@ -36,7 +35,7 @@ fn solution(input: &str) -> usize {
                 }
             }
 
-            destinations.len()
+            destinations
         })
         .sum()
 }
@@ -57,7 +56,7 @@ mod tests {
         let input = include_str!("../example.txt");
         let res = solution(input);
 
-        assert_eq!(res, 36);
+        assert_eq!(res, 81);
     }
 
     #[test]
@@ -65,6 +64,6 @@ mod tests {
         let input = include_str!("../input.txt");
         let res = solution(input);
 
-        assert_eq!(res, 566);
+        assert_eq!(res, 1324);
     }
 }

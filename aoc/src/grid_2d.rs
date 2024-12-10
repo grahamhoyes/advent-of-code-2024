@@ -79,8 +79,8 @@ impl Dir {
         }
     }
 
-    pub fn all() -> Vec<Self> {
-        vec![Dir::North, Dir::East, Dir::South, Dir::West]
+    pub fn all() -> [Self; 4] {
+        [Dir::North, Dir::East, Dir::South, Dir::West]
     }
 }
 
