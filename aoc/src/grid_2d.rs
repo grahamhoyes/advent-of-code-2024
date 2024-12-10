@@ -68,6 +68,20 @@ impl Dir {
             Dir::West => Dir::South,
         }
     }
+
+    /// Get all directions except the one that is the opposite of this direction
+    pub fn not_backwards(self) -> Vec<Self> {
+        match self {
+            Dir::North => vec![Dir::North, Dir::East, Dir::West],
+            Dir::East => vec![Dir::North, Dir::East, Dir::South],
+            Dir::South => vec![Dir::East, Dir::South, Dir::West],
+            Dir::West => vec![Dir::North, Dir::South, Dir::West],
+        }
+    }
+
+    pub fn all() -> Vec<Self> {
+        vec![Dir::North, Dir::East, Dir::South, Dir::West]
+    }
 }
 
 impl Add<Dir> for Coord {
@@ -189,6 +203,29 @@ where
         }
 
         Some(self.matrix[c.0 as usize][c.1 as usize].clone())
+    }
+
+    /// Find the position of all occurrences of `elem` on the board.
+    ///
+    /// Returns a vector of coordinates.
+    pub fn find(&self, elem: &T) -> Vec<Coord>
+    where
+        T: Eq,
+    {
+        self.matrix
+            .iter()
+            .enumerate()
+            .map(|(i, row)| {
+                row.iter().enumerate().filter_map(move |(j, e)| {
+                    if e == elem {
+                        Some((i, j).into())
+                    } else {
+                        None
+                    }
+                })
+            })
+            .flatten()
+            .collect()
     }
 
     pub fn set(&mut self, c: &Coord, val: T) {
