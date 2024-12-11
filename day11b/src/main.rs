@@ -1,34 +1,42 @@
+use std::collections::HashMap;
+
 fn solution(input: &str) -> usize {
-    let mut stones: Vec<u64> = input
+    // Instead of using a vector as in part 1, just store the count of each stone
+    // since the order doesn't matter (we never re-combine, I figured that would be
+    // the part 2 twist).
+    let mut stone_counts: HashMap<u64, usize> = input
         .split_whitespace()
         .map(|s| s.parse().unwrap())
-        .collect();
+        .fold(HashMap::new(), |mut acc, val| {
+            *acc.entry(val).or_insert(0) += 1;
+            acc
+        });
 
-    for _ in 0..25 {
-        let mut next_iteration: Vec<u64> = Vec::with_capacity(stones.len());
+    for _ in 0..75 {
+        let mut next_iteration = HashMap::new();
 
-        for stone in stones {
-            let stone_len = stone.checked_ilog10().unwrap_or(0) + 1;
+        for (value, count) in stone_counts {
+            let stone_len = value.checked_ilog10().unwrap_or(0) + 1;
 
-            if stone == 0 {
-                next_iteration.push(1);
+            if value == 0 {
+                *next_iteration.entry(1).or_insert(0) += count;
             } else if stone_len & 1 == 0 {
                 // Split at the midpoint, using math
                 let split_point = 10u64.pow(stone_len / 2);
-                let left = stone / split_point;
-                let right = stone % split_point;
+                let left = value / split_point;
+                let right = value % split_point;
 
-                next_iteration.push(left);
-                next_iteration.push(right);
+                *next_iteration.entry(left).or_insert(0) += count;
+                *next_iteration.entry(right).or_insert(0) += count;
             } else {
-                next_iteration.push(stone * 2024);
+                *next_iteration.entry(value * 2024).or_insert(0) += count;
             }
         }
 
-        stones = next_iteration;
+        stone_counts = next_iteration;
     }
 
-    stones.len()
+    stone_counts.values().sum()
 }
 
 fn main() {
