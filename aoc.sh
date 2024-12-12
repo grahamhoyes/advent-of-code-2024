@@ -78,7 +78,9 @@ function make_day_part() {
     touch "$name/input.txt"
   fi
 
-  cp "${ROOT_DIR}/template/src/main.rs" "$name/src/main.rs"
+  cp -r "${ROOT_DIR}/template/src" "$name/"
+  cd $name
+  cargo add aoc --path "../aoc"
 }
 
 function make_day() {
@@ -91,8 +93,7 @@ function make_day() {
     echo "Input files will be empty, please fill manually"
   fi
 
-  make_day_part "$day" "a"
-  make_day_part "$day" "b"
+  make_day_part "$day" ""
 }
 
 function download_inputs() {
@@ -109,8 +110,7 @@ function download_inputs() {
     exit 1
   fi
 
-  cp "${ROOT_DIR}/inputs/day${day_padded}.txt" "${ROOT_DIR}/day${day_padded}a/input.txt"
-  cp "${ROOT_DIR}/inputs/day${day_padded}.txt" "${ROOT_DIR}/day${day_padded}b/input.txt"
+  cp "${ROOT_DIR}/inputs/day${day_padded}.txt" "${ROOT_DIR}/day${day_padded}/input.txt"
 }
 
 function usage() {
@@ -119,12 +119,12 @@ function usage() {
 Usage: $0 <command> <day>
 
 Commands:
-  new <day>         Create new project directories for the specified day (parts 1 and 2)
+  new <day>         Create new project directory for the specified day
   download <day>    Download input for the specified day (directories must exist)
 
 Examples:
-  $0 new 1    Create day01a and day01b projects, downloading inputs
-  $0 input 1  Download input for into pre-existing day01a and day01b projects
+  $0 new 1    Create day01 project, downloading inputs
+  $0 input 1  Download input for into pre-existing day01 project
 "
 }
 
