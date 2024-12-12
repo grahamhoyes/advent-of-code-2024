@@ -9,7 +9,7 @@ mod tests {
     #[test]
     fn test_example() {
         let input = include_str!("../example.txt");
-        let res = crate::part_1::solution(input);
+        let res = crate::part_2::solution(input);
 
         assert_eq!(res, 0);
     }
@@ -17,7 +17,7 @@ mod tests {
     #[test]
     fn test_input() {
         let input = include_str!("../input.txt");
-        let res = crate::part_1::solution(input);
+        let res = crate::part_2::solution(input);
 
         assert_eq!(res, 0);
     }
