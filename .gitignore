@@ -20,3 +20,4 @@ example.txt
 input.txt
 inputs/
 .env
+.DS_Store

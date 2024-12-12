@@ -1,4 +1,5 @@
-use aoc::grid_2d::{Board, Coord};
+use aoc::grid_2d::{Board, Coord, Dir};
+use itertools::Itertools;
 use std::collections::HashSet;
 
 pub fn solution(input: &str) -> usize {
@@ -16,7 +17,7 @@ pub fn solution(input: &str) -> usize {
 
         // Basic DFS search of neighbouring cells of the same type
         let mut region: Vec<Coord> = Vec::new();
-        let mut perimeter = 0;
+        let mut sides = 0;
         let mut queue: Vec<Coord> = vec![start];
 
         while let Some(position) = queue.pop() {
@@ -27,17 +28,38 @@ pub fn solution(input: &str) -> usize {
             visited.insert(position);
             region.push(position);
 
-            let neighbours: Vec<Coord> = position
-                .cardinal_neighbours()
-                .into_iter()
-                .filter(|n| board.get(n) == Some(this_type))
-                .collect();
+            // Direction of the neighbour and whether it is of the same type
+            let neighbours: [(Dir, bool); 4] = Dir::cardinal().map(|dir| {
+                let coord = position + dir;
+                (dir, board.get(&coord) == Some(this_type))
+            });
 
-            perimeter += 4 - neighbours.len();
-            queue.extend(neighbours);
+            for (a, b) in neighbours.iter().circular_tuple_windows() {
+                let (dir_a, same_type_a) = a;
+                let (dir_b, same_type_b) = b;
+
+                if !same_type_a && !same_type_b {
+                    // Outer corners: a and b are both a different type from this_type
+                    sides += 1
+                } else if *same_type_a && *same_type_b {
+                    // Inner corners: a and b are both the same type as this_type, and there's
+                    // a different type between them on the diagonal
+                    let diagonal = position + *dir_a + *dir_b;
+                    if board.get(&diagonal) != Some(this_type) {
+                        sides += 1
+                    }
+                }
+            }
+
+            queue.extend(
+                neighbours
+                    .into_iter()
+                    .filter(|(_, same_type)| *same_type)
+                    .map(|(dir, _)| position + dir),
+            );
         }
 
-        res += perimeter * region.len()
+        res += sides * region.len()
     }
 
     res
@@ -52,7 +74,7 @@ mod tests {
         let input = include_str!("../example.txt");
         let res = solution(input);
 
-        assert_eq!(res, 1930);
+        assert_eq!(res, 1206);
     }
 
     #[test]
@@ -60,6 +82,6 @@ mod tests {
         let input = include_str!("../input.txt");
         let res = solution(input);
 
-        assert_eq!(res, 1437300);
+        assert_eq!(res, 849332);
     }
 }

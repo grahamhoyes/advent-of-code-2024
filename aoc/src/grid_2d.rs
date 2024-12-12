@@ -67,6 +67,7 @@ pub enum Dir {
 }
 
 impl Dir {
+    /// Rotate the direction 90 degrees clockwise
     pub fn rotate_right(self) -> Self {
         match self {
             Dir::North => Dir::East,
@@ -80,6 +81,7 @@ impl Dir {
         }
     }
 
+    /// Rotate the direction 90 degrees counter-clockwise
     pub fn rotate_left(self) -> Self {
         match self {
             Dir::North => Dir::West,
@@ -90,6 +92,34 @@ impl Dir {
             Dir::SouthWest => Dir::SouthEast,
             Dir::West => Dir::South,
             Dir::NorthWest => Dir::SouthWest,
+        }
+    }
+
+    /// Rotate the direction 45 degrees clockwise
+    pub fn rotate_right_45(self) -> Self {
+        match self {
+            Dir::North => Dir::NorthEast,
+            Dir::NorthEast => Dir::East,
+            Dir::East => Dir::SouthEast,
+            Dir::SouthEast => Dir::South,
+            Dir::South => Dir::SouthWest,
+            Dir::SouthWest => Dir::West,
+            Dir::West => Dir::NorthWest,
+            Dir::NorthWest => Dir::North,
+        }
+    }
+
+    /// Rotate the direction 45 degrees counter-clockwise
+    pub fn rotate_left_45(self) -> Self {
+        match self {
+            Dir::North => Dir::NorthWest,
+            Dir::NorthEast => Dir::North,
+            Dir::East => Dir::NorthEast,
+            Dir::SouthEast => Dir::East,
+            Dir::South => Dir::SouthEast,
+            Dir::SouthWest => Dir::South,
+            Dir::West => Dir::SouthWest,
+            Dir::NorthWest => Dir::West,
         }
     }
 
