@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 
 fn solution(input: &str) -> usize {
     let board = Board::from_str(input);
-    let antenna_positions: HashMap<char, Vec<Coord>> = board.element_positions(|c| *c != '.');
+    let antenna_positions: HashMap<char, Vec<Coord>> = board.find_positions(|c| *c != '.');
 
     let mut antinode_positions: HashSet<Coord> = HashSet::new();
 

@@ -22,6 +22,18 @@ impl Coord {
 
         Coord(self.0 / gcd, self.1 / gcd)
     }
+
+    /// Get the neighbours of a coordinate in the cardinal directions.
+    ///
+    /// Sorted clockwise starting from the north.
+    pub fn cardinal_neighbours(&self) -> [Coord; 4] {
+        [
+            self + Dir::North,
+            self + Dir::East,
+            self + Dir::South,
+            self + Dir::West,
+        ]
+    }
 }
 
 impl From<Coord> for (i32, i32) {
@@ -45,42 +57,70 @@ impl From<(usize, usize)> for Coord {
 #[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
 pub enum Dir {
     North,
+    NorthEast,
     East,
+    SouthEast,
     South,
+    SouthWest,
     West,
+    NorthWest,
 }
 
 impl Dir {
     pub fn rotate_right(self) -> Self {
         match self {
             Dir::North => Dir::East,
+            Dir::NorthEast => Dir::SouthEast,
             Dir::East => Dir::South,
+            Dir::SouthEast => Dir::SouthWest,
             Dir::South => Dir::West,
+            Dir::SouthWest => Dir::NorthWest,
             Dir::West => Dir::North,
+            Dir::NorthWest => Dir::NorthEast,
         }
     }
 
     pub fn rotate_left(self) -> Self {
         match self {
             Dir::North => Dir::West,
+            Dir::NorthEast => Dir::NorthWest,
             Dir::East => Dir::North,
+            Dir::SouthEast => Dir::NorthEast,
             Dir::South => Dir::East,
+            Dir::SouthWest => Dir::SouthEast,
             Dir::West => Dir::South,
+            Dir::NorthWest => Dir::SouthWest,
         }
     }
 
     /// Get all directions except the one that is the opposite of this direction
+    ///
+    /// Only defined for the cardinal directions.
     pub fn not_backwards(self) -> Vec<Self> {
         match self {
             Dir::North => vec![Dir::North, Dir::East, Dir::West],
             Dir::East => vec![Dir::North, Dir::East, Dir::South],
             Dir::South => vec![Dir::East, Dir::South, Dir::West],
             Dir::West => vec![Dir::North, Dir::South, Dir::West],
+            _ => unimplemented!("Only defined for cardinal directions"),
         }
     }
 
-    pub fn all() -> [Self; 4] {
+    pub fn cardinal() -> [Self; 4] {
         [Dir::North, Dir::East, Dir::South, Dir::West]
+    }
+
+    pub fn all() -> [Self; 8] {
+        [
+            Dir::North,
+            Dir::NorthEast,
+            Dir::East,
+            Dir::SouthEast,
+            Dir::South,
+            Dir::SouthWest,
+            Dir::West,
+            Dir::NorthWest,
+        ]
     }
 }
 
@@ -88,11 +128,23 @@ impl Add<Dir> for Coord {
     type Output = Coord;
 
     fn add(self, rhs: Dir) -> Self::Output {
+        (&self).add(rhs)
+    }
+}
+
+impl Add<Dir> for &Coord {
+    type Output = Coord;
+
+    fn add(self, rhs: Dir) -> Self::Output {
         match rhs {
             Dir::North => Coord(self.0 - 1, self.1),
+            Dir::NorthEast => Coord(self.0 - 1, self.1 + 1),
             Dir::East => Coord(self.0, self.1 + 1),
+            Dir::SouthEast => Coord(self.0 + 1, self.1 + 1),
             Dir::South => Coord(self.0 + 1, self.1),
+            Dir::SouthWest => Coord(self.0 + 1, self.1 - 1),
             Dir::West => Coord(self.0, self.1 - 1),
+            Dir::NorthWest => Coord(self.0 - 1, self.1 - 1),
         }
     }
 }
@@ -205,6 +257,14 @@ where
         Some(self.matrix[c.0 as usize][c.1 as usize].clone())
     }
 
+    /// Get the value at a coordinate without checking for bounds
+    ///
+    /// # Panics
+    /// Panics if the coordinate is outside of the board
+    pub fn get_unchecked(&self, c: &Coord) -> T {
+        self.get(c).unwrap()
+    }
+
     /// Find the position of all occurrences of `elem` on the board.
     ///
     /// Returns a vector of coordinates.
@@ -249,12 +309,12 @@ where
     ///      ....."
     /// );
     ///
-    /// let positions = board.element_positions(|c| *c != '.');
+    /// let positions = board.find_positions(|c| *c != '.');
     /// assert_eq!(positions.get(&'A').unwrap(), &vec![Coord(0, 0)]);
     /// assert_eq!(positions.get(&'X').unwrap().len(), 3);
     ///
     /// // Or collecting just 'X' characters
-    /// let x_positions = board.element_positions(|c| *c == 'X');
+    /// let x_positions = board.find_positions(|c| *c == 'X');
     /// assert_eq!(x_positions.get(&'X').unwrap().len(), 3);
     ///
     /// // Using with an enum
@@ -271,11 +331,11 @@ where
     /// ]);
     ///
     /// // Collecting all non-empty cells
-    /// let positions = board.element_positions(|cell| !matches!(cell, Cell::Empty));
+    /// let positions = board.find_positions(|cell| !matches!(cell, Cell::Empty));
     /// assert_eq!(positions.get(&Cell::Rock).unwrap().len(), 2);
     /// assert_eq!(positions.get(&Cell::Sand).unwrap().len(), 1);
     /// ```
-    pub fn element_positions<P>(&self, filter: P) -> HashMap<T, Vec<Coord>>
+    pub fn find_positions<P>(&self, filter: P) -> HashMap<T, Vec<Coord>>
     where
         P: Fn(&T) -> bool,
         T: Clone + Hash + Eq,
@@ -296,6 +356,12 @@ where
         }
 
         result
+    }
+
+    pub fn positions(&self) -> Vec<Coord> {
+        (0..self.matrix.len())
+            .flat_map(|row| (0..self.matrix[row].len()).map(move |col| (row, col).into()))
+            .collect()
     }
 }
 

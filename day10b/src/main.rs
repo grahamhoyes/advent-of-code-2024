@@ -23,7 +23,7 @@ fn solution(input: &str) -> usize {
                     continue;
                 }
 
-                for dir in Dir::all() {
+                for dir in Dir::cardinal() {
                     let next = current + dir;
                     let Some(next_height) = board.get(&next) else {
                         continue;
