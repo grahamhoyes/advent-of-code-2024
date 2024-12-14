@@ -1,5 +1,6 @@
 use num::Integer;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::hash::Hash;
 use std::ops::{Add, Mul, Sub};
 
@@ -311,6 +312,21 @@ where
         Self::new(matrix)
     }
 
+    /// Construct a board with the given size, and fill all elements with the
+    /// given item
+    pub fn from_size<S>(size: S, item: T) -> Self
+    where
+        S: Into<Coord>,
+    {
+        let size = size.into();
+
+        let matrix: Vec<Vec<T>> = (0..size.0)
+            .map(|_x| (0..size.1).map(|_y| item.clone()).collect())
+            .collect();
+
+        Self::new(matrix)
+    }
+
     pub fn size(&self) -> (usize, usize) {
         (self.matrix.len(), self.matrix[0].len())
     }
@@ -426,10 +442,24 @@ where
         result
     }
 
+    /// Construct a vector of all coordinate positions on the board
     pub fn positions(&self) -> Vec<Coord> {
         (0..self.matrix.len())
             .flat_map(|row| (0..self.matrix[row].len()).map(move |col| (row, col).into()))
             .collect()
+    }
+
+    /// Print the board to the terminal
+    pub fn print(&self)
+    where
+        T: Display,
+    {
+        for row in self.matrix.iter() {
+            for item in row.iter() {
+                print!("{}", item);
+            }
+            println!();
+        }
     }
 }
 

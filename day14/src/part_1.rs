@@ -1,12 +1,12 @@
 use aoc::grid_2d::Coord;
 use itertools::Itertools;
 
-pub fn solution(input: &str, board_size: (i32, i32)) -> usize {
-    let end_positions: Vec<Coord> = input
+/// Parse the input into pairs of (start position, velocity) vectors
+pub fn parse_input(input: &str) -> Vec<(Coord, Coord)> {
+    input
         .lines()
         .map(|l| {
-            let (position, velocity): (Coord, Coord) = l
-                .split_whitespace()
+            l.split_whitespace()
                 .map(|part| {
                     part[2..]
                         .split(",")
@@ -16,16 +16,21 @@ pub fn solution(input: &str, board_size: (i32, i32)) -> usize {
                         .into()
                 })
                 .collect_tuple()
-                .unwrap();
-
-            let end = position + (velocity * 100);
-
-            // Wrap the end position so that it's back on the board
-            end.wrap_to_size(board_size)
+                .unwrap()
         })
-        .collect();
+        .collect()
+}
 
+pub fn solution(input: &str, board_size: (i32, i32)) -> usize {
     let midpoints = (board_size.0 / 2, board_size.1 / 2);
+
+    let end_positions = parse_input(input).into_iter().map(|(position, velocity)| {
+        let end = position + (velocity * 100);
+
+        // Wrap the end position so that it's back on the board
+        end.wrap_to_size(board_size)
+    });
+
     let mut quadrant_counts = [0usize; 4];
 
     for coord in end_positions {
