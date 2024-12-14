@@ -1,7 +1,7 @@
 use num::Integer;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Mul, Sub};
 
 /// A (row, col) coordinate pair or vector. Using i32 so that we can subtract
 /// or have negative vectors.
@@ -33,6 +33,28 @@ impl Coord {
             self + Dir::South,
             self + Dir::West,
         ]
+    }
+
+    /// Wrap the coordinate to the given size / board dimension.
+    ///
+    /// Return coordinate values will always be non-negative.
+    ///
+    /// # Examples
+    /// ```
+    /// let size = (4usize, 4usize);
+    /// let c = Coord(7, -5);
+    /// assert!(c.wrap_to_size(size) == Coord(3, 3));
+    /// ```
+    pub fn wrap_to_size<T>(self, size: T) -> Coord
+    where
+        T: Into<Coord>,
+    {
+        let size = size.into();
+
+        let row = (self.0 % size.0 + size.0) % size.0;
+        let col = (self.1 % size.1 + size.1) % size.1;
+
+        return (row, col).into();
     }
 }
 
@@ -208,6 +230,22 @@ impl Sub<&Coord> for &Coord {
 
     fn sub(self, rhs: &Coord) -> Self::Output {
         Coord(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
+impl Mul<i32> for Coord {
+    type Output = Coord;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        Coord(self.0 * rhs, self.1 * rhs)
+    }
+}
+
+impl Mul<i32> for &Coord {
+    type Output = Coord;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        Coord(self.0 * rhs, self.1 * rhs)
     }
 }
 
