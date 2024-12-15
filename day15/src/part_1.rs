@@ -1,10 +1,7 @@
-use aoc::grid_2d::{Board, Dir};
+use aoc::grid_2d::{Board, Coord, Dir};
 
-pub fn solution(input: &str) -> i32 {
-    let (board, directions) = input.split_once("\n\n").unwrap();
-    let mut board = Board::from_str(board);
-
-    let directions: Vec<Dir> = directions
+pub fn parse_directions(directions: &str) -> Vec<Dir> {
+    directions
         .replace("\n", "")
         .chars()
         .map(|c| match c {
@@ -14,40 +11,56 @@ pub fn solution(input: &str) -> i32 {
             '<' => Dir::West,
             _ => panic!("Unrecognized character {}", c),
         })
-        .collect();
+        .collect()
+}
+
+/// Simulate the robot's movement in `dir` direction.
+///
+/// Returns the new position of the robot, and updates the board in-place.
+pub fn run_step(board: &mut Board<char>, robot: Coord, dir: Dir) -> Coord {
+    // Scan forward from the robot's position
+    let mut next = robot + dir;
+    while let Some(c) = board.get(&next) {
+        match c {
+            '#' => {
+                // Wall - can't move in this direction
+                return robot;
+            }
+            'O' => {
+                // A box - add it to the stack being pushed
+                next = next + dir;
+            }
+            '.' => {
+                // An empty cell - this gets filled up
+                break;
+            }
+            _ => panic!("Unrecognized character {}", c),
+        }
+    }
+
+    // If we got here, `next` is an empty space.
+    // Fill it with a box
+    board.set(&next, 'O');
+
+    // The robot advances by one, and gets replaced with an empty space
+    board.set(&robot, '.');
+
+    let robot = robot + dir;
+    board.set(&robot, '@');
+
+    robot
+}
+
+pub fn solution(input: &str) -> i32 {
+    let (board, directions) = input.split_once("\n\n").unwrap();
+    let mut board = Board::from_str(board);
+
+    let directions: Vec<Dir> = parse_directions(directions);
 
     let mut robot = board.find(&'@')[0];
 
-    'dirs: for dir in directions {
-        // Scan forward from the robot's position
-        let mut next = robot + dir;
-        while let Some(c) = board.get(&next) {
-            match c {
-                '#' => {
-                    // Wall - can't move in this direction
-                    continue 'dirs;
-                }
-                'O' => {
-                    // A box - add it to the stack being pushed
-                    next = next + dir;
-                }
-                '.' => {
-                    // An empty cell - this gets filled up
-                    break;
-                }
-                _ => panic!("Unrecognized character {}", c),
-            }
-        }
-
-        // If we got here, `next` is an empty space.
-        // Fill it with a box
-        board.set(&next, 'O');
-
-        // The robot advances by one, and gets replaced with an empty space
-        board.set(&robot, '.');
-
-        robot = robot + dir;
-        board.set(&robot, '@');
+    for dir in directions {
+        robot = run_step(&mut board, robot, dir);
     }
 
     // Sum up the coordinates of the boxes

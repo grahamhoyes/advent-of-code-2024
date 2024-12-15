@@ -146,6 +146,20 @@ impl Dir {
         }
     }
 
+    /// Rotate the direction 180 degrees
+    pub fn rotate_180(self) -> Self {
+        match self {
+            Dir::North => Dir::South,
+            Dir::NorthEast => Dir::SouthWest,
+            Dir::East => Dir::West,
+            Dir::SouthEast => Dir::NorthWest,
+            Dir::South => Dir::North,
+            Dir::SouthWest => Dir::NorthEast,
+            Dir::West => Dir::East,
+            Dir::NorthWest => Dir::SouthEast,
+        }
+    }
+
     /// Get all directions except the one that is the opposite of this direction
     ///
     /// Only defined for the cardinal directions.
@@ -250,7 +264,7 @@ impl Mul<i32> for &Coord {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Board<T>
 where
     T: Clone,
@@ -458,6 +472,50 @@ where
             for item in row.iter() {
                 print!("{}", item);
             }
+            println!();
+        }
+    }
+
+    /// Print the board with axes numbers
+    pub fn print_with_axes(&self)
+    where
+        T: Display,
+    {
+        let (rows, cols) = self.size();
+        let row_space = (rows - 1).to_string().len();
+        let col_space = (cols - 1).to_string().len();
+
+        let row_labels: Vec<String> = (0..rows)
+            // There's intentionally an extra space here
+            .map(|i| format!("{:0>width$} ", i, width = row_space))
+            .collect();
+        let col_labels: Vec<String> = (0..cols)
+            .map(|i| format!("{:0>width$}", i, width = col_space))
+            .collect();
+
+        // Print the labels for the columns along the top first
+        for i in 0..col_space {
+            // Buffer room for row labels, including an extra space
+            for _ in 0..=row_space {
+                print!(" ")
+            }
+
+            for j in 0..cols {
+                let e = &col_labels[j][i..=i];
+                print!("{}", e);
+            }
+            println!();
+        }
+
+        for (i, row) in self.matrix.iter().enumerate() {
+            // Print the row labels
+            print!("{}", row_labels[i]);
+
+            // Print the actual grid items
+            for item in row.iter() {
+                print!("{}", item);
+            }
+
             println!();
         }
     }
