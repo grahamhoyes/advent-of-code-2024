@@ -13,7 +13,7 @@ pub enum Cell {
 /// Heuristic function for A*, which approximates the cost function for this problem:
 /// Manhattan distance + 1000 * number of required rotations to point sort of
 /// towards the target
-pub fn _heuristic(current: (Coord, Dir), target: Coord) -> u32 {
+pub fn heuristic(current: (Coord, Dir), target: Coord) -> u32 {
     let (current_pos, current_dir) = current;
 
     let direction_vec = target - current_pos;
@@ -41,13 +41,15 @@ struct Visit {
     direction: Dir,
     /// The cost to get to this position
     cost: u32,
+    /// Estimated cost, for A*
+    estimated_cost: u32,
 }
 
 impl Ord for Visit {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse ordering, so that the smallest cost is at the top
         // (making this a min-heap)
-        other.cost.cmp(&self.cost)
+        other.estimated_cost.cmp(&self.estimated_cost)
     }
 }
 
@@ -69,7 +71,7 @@ pub fn solution(input: &str) -> usize {
     let start = board.find(&Cell::Start)[0];
     let end = board.find(&Cell::End)[0];
 
-    // Dijkstra's algorithm, where instead of just considering the cost of translation
+    // A* algorithm, where instead of just considering the cost of translation
     // we also consider the cost of rotation. Very similar to 2023 day 17.
 
     // Minimum cost of getting to a position in a given direction
@@ -86,12 +88,16 @@ pub fn solution(input: &str) -> usize {
         coord: start,
         direction: Dir::East,
         cost: 0,
+        estimated_cost: 0,
     });
+
+    let mut iterations = 0;
 
     while let Some(Visit {
         coord,
         direction,
         cost,
+        ..
     }) = to_visit.pop()
     {
         if matches!(board.get(&coord), Some(Cell::Wall)) {
@@ -104,7 +110,10 @@ pub fn solution(input: &str) -> usize {
             continue;
         }
 
+        iterations += 1;
+
         if coord == end {
+            println!("Completed in {} iterations", iterations);
             return cost as usize;
         }
 
@@ -118,6 +127,8 @@ pub fn solution(input: &str) -> usize {
         ];
 
         for (new_position, new_direction, new_cost) in options {
+            let heuristic_cost = heuristic((new_position, new_direction), end);
+
             let is_cheaper = costs
                 .get(&(new_position, new_direction))
                 .map_or(true, |&current| new_cost < current);
@@ -128,6 +139,8 @@ pub fn solution(input: &str) -> usize {
                     coord: new_position,
                     direction: new_direction,
                     cost: new_cost,
+                    // Set estimated_cost: new_cost and this becomes Dijkstra's algorithm
+                    estimated_cost: new_cost + heuristic_cost,
                 })
             }
         }
