@@ -59,11 +59,26 @@ impl PartialOrd for Visit {
     }
 }
 
+/// The fundamental state of the actor on the board at any given time
+/// for this problem has to consider both position and direction,
+/// since rotations incur a cost.
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
+pub struct State {
+    pub position: Coord,
+    pub facing: Dir,
+}
+
+/// Map from a state to its parents.
+///
+/// The parents of a state are the states that can lead to it,
+/// all of which have an equal and lowest cost.
+pub type Parents = HashMap<State, HashSet<State>>;
+
 /// Run the A* algorithm to find the shortest paths from the start
 /// to the end node of the board, subject to costs:
 /// - Moving straight is a cost of 1
 /// - Rotating left or right is a cost of 1000
-pub fn run_astar(board: &Board<Cell>) -> Option<u32> {
+pub fn run_astar(board: &Board<Cell>) -> Option<(u32, Parents)> {
     let start = board.find(&Cell::Start)[0];
     let end = board.find(&Cell::End)[0];
 
@@ -72,17 +87,17 @@ pub fn run_astar(board: &Board<Cell>) -> Option<u32> {
 
     // Minimum cost of getting to a position in a given direction
     let mut costs: HashMap<(Coord, Dir), u32> = HashMap::new();
-
     // Locations and directions we've already visited
     let mut visited: HashSet<(Coord, Dir)> = HashSet::new();
-
     // Frontier, ordered by minimum cost
     let mut to_visit: BinaryHeap<Visit> = BinaryHeap::new();
+    // Parents, which can construct the optimal paths through the graph
+    let mut parents: Parents = HashMap::new();
 
     // Starting position and direction
     to_visit.push(Visit {
         coord: start,
-        direction: Dir::East,
+        direction: Dir::East, // Starting East given in the problem definition
         cost: 0,
         estimated_cost: 0,
     });
@@ -110,7 +125,7 @@ pub fn run_astar(board: &Board<Cell>) -> Option<u32> {
 
         if coord == end {
             println!("Completed in {} iterations", iterations);
-            return Some(cost);
+            return Some((cost, parents));
         }
 
         // Movement possibilities, and the costs they incur
@@ -125,19 +140,47 @@ pub fn run_astar(board: &Board<Cell>) -> Option<u32> {
         for (new_position, new_direction, new_cost) in options {
             let heuristic_cost = heuristic((new_position, new_direction), end);
 
-            let is_cheaper = costs
+            let cost_comparison = costs
                 .get(&(new_position, new_direction))
-                .map_or(true, |&current| new_cost < current);
+                .map_or(Ordering::Less, |&current| new_cost.cmp(&current));
 
-            if is_cheaper {
-                costs.insert((new_position, new_direction), new_cost);
-                to_visit.push(Visit {
-                    coord: new_position,
-                    direction: new_direction,
-                    cost: new_cost,
-                    // Set estimated_cost: new_cost and this becomes Dijkstra's algorithm
-                    estimated_cost: new_cost + heuristic_cost,
-                });
+            match cost_comparison {
+                Ordering::Less => {
+                    costs.insert((new_position, new_direction), new_cost);
+                    to_visit.push(Visit {
+                        coord: new_position,
+                        direction: new_direction,
+                        cost: new_cost,
+                        // Set estimated_cost: new_cost and this becomes Dijkstra's algorithm
+                        estimated_cost: new_cost + heuristic_cost,
+                    });
+                    // When a new cheapest path is found, reset the parents of this node
+                    parents.insert(
+                        State {
+                            position: new_position,
+                            facing: new_direction,
+                        },
+                        HashSet::from([State {
+                            position: coord,
+                            facing: direction,
+                        }]),
+                    );
+                }
+                Ordering::Equal => {
+                    // If the cost is the same, we can add this to the parents
+                    // of the current state
+                    parents
+                        .entry(State {
+                            position: new_position,
+                            facing: new_direction,
+                        })
+                        .or_default()
+                        .insert(State {
+                            position: coord,
+                            facing: direction,
+                        });
+                }
+                _ => {}
             }
         }
     }
@@ -145,18 +188,22 @@ pub fn run_astar(board: &Board<Cell>) -> Option<u32> {
     None
 }
 
-pub fn solution(input: &str) -> u32 {
-    let board: Board<Cell> = Board::transform_from_str(input, |c| match c {
+pub fn parse_input(input: &str) -> Board<Cell> {
+    Board::transform_from_str(input, |c| match c {
         'S' => Cell::Start,
         '.' => Cell::Empty,
         '#' => Cell::Wall,
         'E' => Cell::End,
         _ => panic!("Unrecognized character {}", c),
-    });
+    })
+}
 
-    let cost = run_astar(&board).expect("No solution found");
+pub fn solution(input: &str) -> u32 {
+    let board = parse_input(input);
 
-    return cost;
+    let (cost, _parents) = run_astar(&board).expect("No solution found");
+
+    cost
 }
 
 #[cfg(test)]
