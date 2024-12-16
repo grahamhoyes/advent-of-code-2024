@@ -59,15 +59,11 @@ impl PartialOrd for Visit {
     }
 }
 
-pub fn solution(input: &str) -> usize {
-    let board: Board<Cell> = Board::transform_from_str(input, |c| match c {
-        'S' => Cell::Start,
-        '.' => Cell::Empty,
-        '#' => Cell::Wall,
-        'E' => Cell::End,
-        _ => panic!("Unrecognized character {}", c),
-    });
-
+/// Run the A* algorithm to find the shortest paths from the start
+/// to the end node of the board, subject to costs:
+/// - Moving straight is a cost of 1
+/// - Rotating left or right is a cost of 1000
+pub fn run_astar(board: &Board<Cell>) -> Option<u32> {
     let start = board.find(&Cell::Start)[0];
     let end = board.find(&Cell::End)[0];
 
@@ -114,7 +110,7 @@ pub fn solution(input: &str) -> usize {
 
         if coord == end {
             println!("Completed in {} iterations", iterations);
-            return cost as usize;
+            return Some(cost);
         }
 
         // Movement possibilities, and the costs they incur
@@ -141,12 +137,26 @@ pub fn solution(input: &str) -> usize {
                     cost: new_cost,
                     // Set estimated_cost: new_cost and this becomes Dijkstra's algorithm
                     estimated_cost: new_cost + heuristic_cost,
-                })
+                });
             }
         }
     }
 
-    0
+    None
+}
+
+pub fn solution(input: &str) -> u32 {
+    let board: Board<Cell> = Board::transform_from_str(input, |c| match c {
+        'S' => Cell::Start,
+        '.' => Cell::Empty,
+        '#' => Cell::Wall,
+        'E' => Cell::End,
+        _ => panic!("Unrecognized character {}", c),
+    });
+
+    let cost = run_astar(&board).expect("No solution found");
+
+    return cost;
 }
 
 #[cfg(test)]

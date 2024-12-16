@@ -1,4 +1,4 @@
-pub fn solution(_input: &str) -> usize {
+pub fn solution(_input: &str) -> u32 {
     0
 }
 
