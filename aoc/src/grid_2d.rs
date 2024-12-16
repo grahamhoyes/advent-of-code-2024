@@ -57,6 +57,23 @@ impl Coord {
 
         return (row, col).into();
     }
+
+    /// Compute the manhattan distance between two coordinates
+    pub fn manhattan_distance(&self, other: &Coord) -> u32 {
+        (self.0.abs_diff(other.0) + self.1.abs_diff(other.1)) as u32
+    }
+
+    /// Compute the L1-norm of the coordinate vector
+    ///
+    /// The L1-norm is the sum of the absolute values of the components.
+    pub fn l1_norm(&self) -> u32 {
+        (self.0.abs() + self.1.abs()) as u32
+    }
+
+    /// Compute the L2-norm of the coordinate vector
+    pub fn l2_norm(&self) -> f64 {
+        ((self.0 * self.0 + self.1 * self.1) as f64).sqrt()
+    }
 }
 
 impl From<Coord> for (i32, i32) {
@@ -160,6 +177,20 @@ impl Dir {
         }
     }
 
+    /// Convert the direction to degrees, between 0 and 359
+    pub fn to_degrees(self) -> u32 {
+        match self {
+            Dir::North => 0,
+            Dir::NorthEast => 45,
+            Dir::East => 90,
+            Dir::SouthEast => 135,
+            Dir::South => 180,
+            Dir::SouthWest => 225,
+            Dir::West => 270,
+            Dir::NorthWest => 315,
+        }
+    }
+
     /// Get all directions except the one that is the opposite of this direction
     ///
     /// Only defined for the cardinal directions.
@@ -188,6 +219,52 @@ impl Dir {
             Dir::West,
             Dir::NorthWest,
         ]
+    }
+
+    /// Get the degree offset between two directions, measuring the rotation needed
+    /// to get from the reference direction (other) to this direction.
+    /// Positive means clockwise rotation, negative means counter-clockwise.
+    ///
+    /// # Examples
+    /// ```
+    /// use grid_2d::Dir;
+    /// let north = Dir::North;
+    /// let east = Dir::East;
+    /// let north_east = Dir::NorthEast;
+    /// let south_west = Dir::SouthWest;
+    ///
+    /// // To get from East to North requires -90 degree (counterclockwise) rotation
+    /// assert!(north.offset_from(&east) == -90);
+    ///
+    /// // To get from North to East requires 90 degree (clockwise) rotation
+    /// assert!(east.offset_from(&north) == 90);
+    ///
+    /// // To get from NorthEast to North requires -45 degree rotation
+    /// assert!(north.offset_from(&north_east) == -45);
+    ///
+    /// // To get from SouthWest to NorthEast requires 180 degrees
+    /// // Note: 180 is always returned instead of -180
+    /// assert!(north_east.offset_from(&south_west) == 180);
+    /// ```
+    pub fn offset_from(&self, other: &Dir) -> i32 {
+        let self_degrees = self.to_degrees() as i32;
+        let other_degrees = other.to_degrees() as i32;
+
+        let mut diff = self_degrees - other_degrees;
+
+        // Normalize to (-180, 180]
+        if diff > 180 {
+            diff -= 360;
+        } else if diff <= -180 {
+            diff += 360;
+        }
+
+        // Special case, prefer 180 over -180
+        if diff == -180 {
+            180
+        } else {
+            diff
+        }
     }
 }
 
