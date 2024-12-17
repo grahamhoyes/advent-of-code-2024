@@ -24,41 +24,33 @@ impl From<u8> for Op {
     }
 }
 
-pub fn run_program(program: &Vec<u8>, mut a_reg: u32, mut b_reg: u32, mut c_reg: u32) -> String {
+pub fn run_program(program: &[u8], mut a_reg: u32, mut b_reg: u32, mut c_reg: u32) -> Vec<u8> {
     // Instruction pointer
     let mut ip: usize = 0;
 
-    let mut output: Vec<u32> = Vec::new();
+    let mut output: Vec<u8> = Vec::with_capacity(16);
 
-    loop {
-        let Some(&op) = program.get(ip) else {
-            break;
-        };
-        let op: Op = op.into();
+    let mut combo_arg_lookup = [0, 1, 2, 3, a_reg, b_reg, c_reg];
 
-        let Some(&arg) = program.get(ip + 1) else {
-            break;
-        };
+    while ip < program.len() - 1 {
+        let op: Op = program[ip].into();
 
-        let combo_arg = match arg {
-            0..=3 => arg as u32,
-            4 => a_reg,
-            5 => b_reg,
-            6 => c_reg,
-            7 => panic!("Invalid operand"),
-            _ => unreachable!(),
-        };
+        let arg = program[ip + 1];
+
+        combo_arg_lookup[4] = a_reg;
+        combo_arg_lookup[5] = b_reg;
+        combo_arg_lookup[6] = c_reg;
 
         match op {
             Op::Adv => {
                 // a_reg = a_reg / 2^arg
-                a_reg /= 1u32 << combo_arg;
+                a_reg /= 1u32 << combo_arg_lookup[arg as usize];
             }
             Op::Bxl => {
                 b_reg ^= arg as u32;
             }
             Op::Bst => {
-                b_reg = combo_arg & 7;
+                b_reg = combo_arg_lookup[arg as usize] & 7;
             }
             Op::Jnz => {
                 if a_reg > 0 {
@@ -70,20 +62,20 @@ pub fn run_program(program: &Vec<u8>, mut a_reg: u32, mut b_reg: u32, mut c_reg:
                 b_reg ^= c_reg;
             }
             Op::Out => {
-                output.push(combo_arg & 7);
+                output.push(combo_arg_lookup[arg as usize] as u8 & 7);
             }
             Op::Bdv => {
-                b_reg = a_reg / (1u32 << combo_arg);
+                b_reg = a_reg / (1u32 << combo_arg_lookup[arg as usize]);
             }
             Op::Cdv => {
-                c_reg = a_reg / (1u32 << combo_arg);
+                c_reg = a_reg / (1u32 << combo_arg_lookup[arg as usize]);
             }
         }
 
         ip += 2;
     }
 
-    output.into_iter().join(",")
+    output
 }
 
 pub fn parse_input(input: &str) -> (Vec<u8>, u32, u32, u32) {
@@ -111,7 +103,9 @@ pub fn parse_input(input: &str) -> (Vec<u8>, u32, u32, u32) {
 pub fn solution(input: &str) -> String {
     let (program, a_reg, b_reg, c_reg) = parse_input(input);
 
-    run_program(&program, a_reg, b_reg, c_reg)
+    let output = run_program(&program, a_reg, b_reg, c_reg);
+
+    output.into_iter().join(",")
 }
 
 #[cfg(test)]
