@@ -16,7 +16,7 @@ Cargo.lock
 # RustRover
 .idea/
 
-example.txt
+example*.txt
 input.txt
 inputs/
 .env
