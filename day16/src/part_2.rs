@@ -16,6 +16,7 @@ pub fn solution(input: &str) -> u32 {
 
     let mut partial_paths: Vec<Vec<State>> = parents
         .iter()
+        // Starting with just a single path containing the end state
         .filter(|(state, _)| state.position == end)
         .map(|(state, _)| vec![state.clone()])
         .collect();

@@ -13,10 +13,8 @@ pub enum Cell {
 /// Heuristic function for A*, which approximates the cost function for this problem:
 /// Manhattan distance + 1000 * number of required rotations to point sort of
 /// towards the target
-pub fn heuristic(current: (Coord, Dir), target: Coord) -> u32 {
-    let (current_pos, current_dir) = current;
-
-    let direction_vec = target - current_pos;
+pub fn heuristic(current: &State, target: &Coord) -> u32 {
+    let direction_vec = target - &current.position;
 
     // Whichever coordinate has a greater magnitude can indicate roughly which
     // cardinal direction we should try to move in.
@@ -24,32 +22,34 @@ pub fn heuristic(current: (Coord, Dir), target: Coord) -> u32 {
     // be <= 0 and the column >=0
     let (d_rows, d_cols) = (direction_vec.0.abs(), direction_vec.1.abs());
     let target_dir = match d_rows.cmp(&d_cols) {
-        Ordering::Greater => Dir::North, // More rows to move than columns
-        Ordering::Less => Dir::East,     // More columns to move than rows
-        Ordering::Equal => current_dir,  // Doesn't matter, stay current
+        Ordering::Greater => Dir::North,   // More rows to move than columns
+        Ordering::Less => Dir::East,       // More columns to move than rows
+        Ordering::Equal => current.facing, // Doesn't matter, stay current
     };
 
-    let rotations_required = (current_dir.offset_from(&target_dir) / 90).unsigned_abs();
+    let rotations_required = (current.facing.offset_from(&target_dir) / 90).unsigned_abs();
 
     direction_vec.l1_norm() + 1000 * rotations_required
 }
 
+/// A visit to a state in the A* algorithm
+///
+/// `estimated_cost` is the heuristic-based cost estimate from this state
+/// to the end state, which is used to prioritize the frontier.
 #[derive(Debug, PartialEq, Eq)]
 struct Visit {
-    coord: Coord,
-    /// The direction we face when entering this position
-    direction: Dir,
+    state: State,
     /// The cost to get to this position
-    cost: u32,
-    /// Estimated cost, for A*
-    estimated_cost: u32,
+    current_cost: u32,
+    /// Heuristic-estimated cost to the end state, for A*
+    estimated_total_cost: u32,
 }
 
 impl Ord for Visit {
     fn cmp(&self, other: &Self) -> Ordering {
         // Reverse ordering, so that the smallest cost is at the top
         // (making this a min-heap)
-        other.estimated_cost.cmp(&self.estimated_cost)
+        other.estimated_total_cost.cmp(&self.estimated_total_cost)
     }
 }
 
@@ -86,9 +86,9 @@ pub fn run_astar(board: &Board<Cell>) -> Option<(u32, Parents)> {
     // we also consider the cost of rotation. Very similar to 2023 day 17.
 
     // Minimum cost of getting to a position in a given direction
-    let mut costs: HashMap<(Coord, Dir), u32> = HashMap::new();
+    let mut costs: HashMap<State, u32> = HashMap::new();
     // Locations and directions we've already visited
-    let mut visited: HashSet<(Coord, Dir)> = HashSet::new();
+    let mut visited: HashSet<State> = HashSet::new();
     // Frontier, ordered by minimum cost
     let mut to_visit: BinaryHeap<Visit> = BinaryHeap::new();
     // Parents, which can construct the optimal paths through the graph
@@ -96,34 +96,35 @@ pub fn run_astar(board: &Board<Cell>) -> Option<(u32, Parents)> {
 
     // Starting position and direction
     to_visit.push(Visit {
-        coord: start,
-        direction: Dir::East, // Starting East given in the problem definition
-        cost: 0,
-        estimated_cost: 0,
+        state: State {
+            position: start,
+            facing: Dir::East, // Starting East given in the problem definition
+        },
+        current_cost: 0,
+        estimated_total_cost: 0,
     });
 
     let mut iterations = 0;
 
     while let Some(Visit {
-        coord,
-        direction,
-        cost,
+        state,
+        current_cost: cost,
         ..
     }) = to_visit.pop()
     {
-        if matches!(board.get(&coord), Some(Cell::Wall)) {
+        if matches!(board.get(&state.position), Some(Cell::Wall)) {
             // Can't move here
             continue;
         }
 
-        if !visited.insert((coord, direction)) {
+        if !visited.insert(state.clone()) {
             // Already been here
             continue;
         }
 
         iterations += 1;
 
-        if coord == end {
+        if state.position == end {
             println!("Completed in {} iterations", iterations);
             return Some((cost, parents));
         }
@@ -131,54 +132,40 @@ pub fn run_astar(board: &Board<Cell>) -> Option<(u32, Parents)> {
         // Movement possibilities, and the costs they incur
         let options = [
             // Moving in the current direction costs 1
-            (coord + direction, direction, cost + 1),
+            (state.position + state.facing, state.facing, cost + 1),
             // Rotating left or right in-place costs 1000
-            (coord, direction.rotate_right(), cost + 1000),
-            (coord, direction.rotate_left(), cost + 1000),
+            (state.position, state.facing.rotate_right(), cost + 1000),
+            (state.position, state.facing.rotate_left(), cost + 1000),
         ];
 
         for (new_position, new_direction, new_cost) in options {
-            let heuristic_cost = heuristic((new_position, new_direction), end);
+            let new_state = State {
+                position: new_position,
+                facing: new_direction,
+            };
+
+            let heuristic_cost = heuristic(&new_state, &end);
 
             let cost_comparison = costs
-                .get(&(new_position, new_direction))
+                .get(&new_state)
                 .map_or(Ordering::Less, |&current| new_cost.cmp(&current));
 
             match cost_comparison {
                 Ordering::Less => {
-                    costs.insert((new_position, new_direction), new_cost);
+                    costs.insert(new_state.clone(), new_cost);
                     to_visit.push(Visit {
-                        coord: new_position,
-                        direction: new_direction,
-                        cost: new_cost,
+                        state: new_state.clone(),
+                        current_cost: new_cost,
                         // Set estimated_cost: new_cost and this becomes Dijkstra's algorithm
-                        estimated_cost: new_cost + heuristic_cost,
+                        estimated_total_cost: new_cost + heuristic_cost,
                     });
                     // When a new cheapest path is found, reset the parents of this node
-                    parents.insert(
-                        State {
-                            position: new_position,
-                            facing: new_direction,
-                        },
-                        HashSet::from([State {
-                            position: coord,
-                            facing: direction,
-                        }]),
-                    );
+                    parents.insert(new_state, HashSet::from([state.clone()]));
                 }
                 Ordering::Equal => {
                     // If the cost is the same, we can add this to the parents
                     // of the current state
-                    parents
-                        .entry(State {
-                            position: new_position,
-                            facing: new_direction,
-                        })
-                        .or_default()
-                        .insert(State {
-                            position: coord,
-                            facing: direction,
-                        });
+                    parents.entry(new_state).or_default().insert(state.clone());
                 }
                 _ => {}
             }
