@@ -1,9 +1,10 @@
 use itertools::Itertools;
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 #[repr(u8)]
 #[allow(dead_code)]
-enum Op {
+pub enum Op {
     Adv = 0,
     Bxl = 1,
     Bst = 2,
@@ -24,7 +25,22 @@ impl From<u8> for Op {
     }
 }
 
-pub fn run_program(program: &[u8], mut a_reg: u32, mut b_reg: u32, mut c_reg: u32) -> Vec<u8> {
+impl Display for Op {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Op::Adv => write!(f, "adv"),
+            Op::Bxl => write!(f, "bxl"),
+            Op::Bst => write!(f, "bst"),
+            Op::Jnz => write!(f, "jnz"),
+            Op::Bxc => write!(f, "bxc"),
+            Op::Out => write!(f, "out"),
+            Op::Bdv => write!(f, "bdv"),
+            Op::Cdv => write!(f, "cdv"),
+        }
+    }
+}
+
+pub fn run_program(program: &[u8], mut a_reg: u64, mut b_reg: u64, mut c_reg: u64) -> Vec<u8> {
     // Instruction pointer
     let mut ip: usize = 0;
 
@@ -43,11 +59,12 @@ pub fn run_program(program: &[u8], mut a_reg: u32, mut b_reg: u32, mut c_reg: u3
 
         match op {
             Op::Adv => {
-                // a_reg = a_reg / 2^arg
-                a_reg /= 1u32 << combo_arg_lookup[arg as usize];
+                // a_reg = a_reg / 2**arg
+                // a_reg /= 1u64 << combo_arg_lookup[arg as usize];
+                a_reg >>= combo_arg_lookup[arg as usize];
             }
             Op::Bxl => {
-                b_reg ^= arg as u32;
+                b_reg ^= arg as u64;
             }
             Op::Bst => {
                 b_reg = combo_arg_lookup[arg as usize] & 7;
@@ -65,10 +82,10 @@ pub fn run_program(program: &[u8], mut a_reg: u32, mut b_reg: u32, mut c_reg: u3
                 output.push(combo_arg_lookup[arg as usize] as u8 & 7);
             }
             Op::Bdv => {
-                b_reg = a_reg / (1u32 << combo_arg_lookup[arg as usize]);
+                b_reg = a_reg >> combo_arg_lookup[arg as usize];
             }
             Op::Cdv => {
-                c_reg = a_reg / (1u32 << combo_arg_lookup[arg as usize]);
+                c_reg = a_reg >> combo_arg_lookup[arg as usize];
             }
         }
 
@@ -78,13 +95,13 @@ pub fn run_program(program: &[u8], mut a_reg: u32, mut b_reg: u32, mut c_reg: u3
     output
 }
 
-pub fn parse_input(input: &str) -> (Vec<u8>, u32, u32, u32) {
+pub fn parse_input(input: &str) -> (Vec<u8>, u64, u64, u64) {
     let (registers, program) = input.trim().split_once("\n\n").unwrap();
 
     // Registers, u32
     let (a_reg, b_reg, c_reg) = registers
         .lines()
-        .map(|line| line.split_once(": ").unwrap().1.parse::<u32>().unwrap())
+        .map(|line| line.split_once(": ").unwrap().1.parse::<u64>().unwrap())
         .collect_tuple()
         .unwrap();
 
