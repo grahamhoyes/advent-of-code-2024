@@ -94,7 +94,55 @@ impl From<(usize, usize)> for Coord {
     }
 }
 
-#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy)]
+impl Add<Coord> for Coord {
+    type Output = Coord;
+
+    fn add(self, rhs: Coord) -> Self::Output {
+        Coord(self.0 + rhs.0, self.1 + rhs.1)
+    }
+}
+
+impl Add<&Coord> for &Coord {
+    type Output = Coord;
+
+    fn add(self, rhs: &Coord) -> Self::Output {
+        Coord(self.0 + rhs.0, self.1 + rhs.1)
+    }
+}
+
+impl Sub<Coord> for Coord {
+    type Output = Coord;
+
+    fn sub(self, rhs: Coord) -> Self::Output {
+        Coord(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
+impl Sub<&Coord> for &Coord {
+    type Output = Coord;
+
+    fn sub(self, rhs: &Coord) -> Self::Output {
+        Coord(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
+impl Mul<i32> for Coord {
+    type Output = Coord;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        Coord(self.0 * rhs, self.1 * rhs)
+    }
+}
+
+impl Mul<i32> for &Coord {
+    type Output = Coord;
+
+    fn mul(self, rhs: i32) -> Self::Output {
+        Coord(self.0 * rhs, self.1 * rhs)
+    }
+}
+
+#[derive(Debug, Hash, Eq, PartialEq, Clone, Copy, Ord, PartialOrd)]
 pub enum Dir {
     North,
     NorthEast,
@@ -293,51 +341,23 @@ impl Add<Dir> for &Coord {
     }
 }
 
-impl Add<Coord> for Coord {
-    type Output = Coord;
-
-    fn add(self, rhs: Coord) -> Self::Output {
-        Coord(self.0 + rhs.0, self.1 + rhs.1)
-    }
-}
-
-impl Add<&Coord> for &Coord {
-    type Output = Coord;
-
-    fn add(self, rhs: &Coord) -> Self::Output {
-        Coord(self.0 + rhs.0, self.1 + rhs.1)
-    }
-}
-
-impl Sub<Coord> for Coord {
-    type Output = Coord;
-
-    fn sub(self, rhs: Coord) -> Self::Output {
-        Coord(self.0 - rhs.0, self.1 - rhs.1)
-    }
-}
-
-impl Sub<&Coord> for &Coord {
-    type Output = Coord;
-
-    fn sub(self, rhs: &Coord) -> Self::Output {
-        Coord(self.0 - rhs.0, self.1 - rhs.1)
-    }
-}
-
-impl Mul<i32> for Coord {
-    type Output = Coord;
-
-    fn mul(self, rhs: i32) -> Self::Output {
-        Coord(self.0 * rhs, self.1 * rhs)
-    }
-}
-
-impl Mul<i32> for &Coord {
-    type Output = Coord;
-
-    fn mul(self, rhs: i32) -> Self::Output {
-        Coord(self.0 * rhs, self.1 * rhs)
+/// Convert a coordinate vector to a direction
+///
+/// # Panics
+/// Panics if the coordinate vector is not a cardinal or diagonal direction
+impl From<Coord> for Dir {
+    fn from(coord: Coord) -> Self {
+        match coord.simplify() {
+            Coord(-1, 0) => Dir::North,
+            Coord(-1, 1) => Dir::NorthEast,
+            Coord(0, 1) => Dir::East,
+            Coord(1, 1) => Dir::SouthEast,
+            Coord(1, 0) => Dir::South,
+            Coord(1, -1) => Dir::SouthWest,
+            Coord(0, -1) => Dir::West,
+            Coord(-1, -1) => Dir::NorthWest,
+            _ => panic!("Invalid direction vector"),
+        }
     }
 }
 
