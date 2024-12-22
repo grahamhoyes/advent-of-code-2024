@@ -1,4 +1,4 @@
-fn solution(input: &str) -> usize {
+pub fn solution(input: &str) -> usize {
     let mut stones: Vec<u64> = input
         .split_whitespace()
         .map(|s| s.parse().unwrap())
@@ -29,13 +29,6 @@ fn solution(input: &str) -> usize {
     }
 
     stones.len()
-}
-
-fn main() {
-    let input = include_str!("../input.txt");
-    let res = solution(input);
-
-    println!("Result: {}", res);
 }
 
 #[cfg(test)]

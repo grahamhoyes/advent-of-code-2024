@@ -26,7 +26,7 @@ fn print_blocks(blocks: &[Block]) {
     println!();
 }
 
-fn solution(input: &str) -> usize {
+pub fn solution(input: &str) -> usize {
     let mut blocks: Vec<Block> = input
         .chars()
         .filter(|c| c.is_numeric())

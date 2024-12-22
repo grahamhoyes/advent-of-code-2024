@@ -4,7 +4,7 @@ enum Block {
     File { id: usize, size: u8 },
 }
 
-fn solution(input: &str) -> usize {
+pub fn solution(input: &str) -> usize {
     let mut blocks: Vec<Block> = input
         .chars()
         .filter(|c| c.is_numeric())
@@ -94,13 +94,6 @@ fn solution(input: &str) -> usize {
     }
 
     checksum
-}
-
-fn main() {
-    let input = include_str!("../input.txt");
-    let res = solution(input);
-
-    println!("Result: {}", res);
 }
 
 #[cfg(test)]

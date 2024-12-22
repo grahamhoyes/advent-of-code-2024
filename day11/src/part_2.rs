@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-fn solution(input: &str) -> usize {
+pub fn solution(input: &str) -> usize {
     // Instead of using a vector as in part 1, just store the count of each stone
     // since the order doesn't matter (we never re-combine, I figured that would be
     // the part 2 twist).
@@ -39,13 +39,6 @@ fn solution(input: &str) -> usize {
     stone_counts.values().sum()
 }
 
-fn main() {
-    let input = include_str!("../input.txt");
-    let res = solution(input);
-
-    println!("Result: {}", res);
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -55,7 +48,7 @@ mod tests {
         let input = include_str!("../example.txt");
         let res = solution(input);
 
-        assert_eq!(res, 55312);
+        assert_eq!(res, 65601038650482);
     }
 
     #[test]
@@ -63,6 +56,6 @@ mod tests {
         let input = include_str!("../input.txt");
         let res = solution(input);
 
-        assert_eq!(res, 172484);
+        assert_eq!(res, 205913561055242);
     }
 }
