@@ -100,8 +100,8 @@ function download_inputs() {
   local day="$1"
   local day_padded=$(printf "%02d" "$day")
 
-  if [ ! -d "${ROOT_DIR}/day${day_padded}a" ] || [ ! -d "${ROOT_DIR}/day${day_padded}b" ]; then
-    echo "Error: Day ${day} directories not found. Create them first with '$0 new ${day}'"
+  if [ ! -d "${ROOT_DIR}/day${day_padded}" ]; then
+    echo "Error: Day ${day} directory not found. Create first with '$0 new ${day}'"
     exit 1
   fi
 
@@ -111,6 +111,11 @@ function download_inputs() {
   fi
 
   cp "${ROOT_DIR}/inputs/day${day_padded}.txt" "${ROOT_DIR}/day${day_padded}/input.txt"
+  # If example.txt doesn't exist
+  if [ ! -f "${ROOT_DIR}/day${day_padded}/example.txt" ]; then
+    echo "day${day_padded}/example.txt created empty, please fill manually"
+    touch "${ROOT_DIR}/day${day_padded}/example.txt"
+  fi
 }
 
 function usage() {
