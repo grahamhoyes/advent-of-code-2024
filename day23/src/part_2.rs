@@ -1,4 +1,5 @@
 pub fn solution(_input: &str) -> usize {
+    // Did part 2 in python with networkx to find a the max clique
     0
 }
 
